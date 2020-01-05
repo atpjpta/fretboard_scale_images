@@ -2,12 +2,11 @@
 
 This is a python program that displays color coded musical scales on a fretboard for any fretted stringed instrument. Any scale consisting of any subset of [A, A#, B, C, C#, D, D#, E, F, F#, G, G#] can be input. The number of strings, number of frets, tuning, and color coding are configurable.
 
-I was inspired to write this program after watching [this video](https://www.youtube.com/watch?v=wts2Mw6Nb5s) and experimenting with the idea. I made one of these scales by hand on a piece of paper for E minor. I screwed up twice and had to completely restart, so it took about one very frustrating hour to make. However, that piece of paper has been so helpful over the past month I've had it. I've come up with some riffs I don't think I would have ever found without it. So, I decided to write this program. This program makes it extremely easy and fast to generate an Allan Holdsworth-like scale image for any scale for any fretted string instrument. I hope it helps you as much as its been helping me!
+I was inspired to write this program after watching [this video](https://www.youtube.com/watch?v=wts2Mw6Nb5s) and experimenting with the idea. I made one of these scales by hand on a piece of paper for E minor. I screwed up twice and had to completely restart, so it took about one very frustrating hour to make. However, that piece of paper has been so helpful over the past month I've had it. I've come up with some riffs I don't think I would have ever found without it. So, I decided to write this program. This program makes it extremely easy and fast to generate an Allan Holdsworth-like scale image for any scale for any fretted string instrument. I hope you enjoy it as much as me!
 
 ## Dependencies:
 
-pycairo 1.18.2
-numpy 1.17.4
+pycairo 1.18.2, numpy 1.17.4
 
 ## Arguments:
 
@@ -65,13 +64,25 @@ E Minor is [E, F#, G, A, B, C, D]. Let's say we want to highlight the root, the 
 
 This will save an e_minor_standard.svg in your current folder. You can open it in a browser. If you'd prefer, you can change the extension to .pdf or .png and open it with a PDF of PNG viewer. Notice that the notes we did not specify a color for are black by default.
 
-One more example. D Minor is [D, E, F, G, A, A#, C]. This time let's highlight the pentatonic minor scale within D Minor, so [D, F, G, A, C]. We will use the colors cyan, green, yellow, magenta, and orange respectively. We will specify a default color of black for the other notes. We will do this for a 6 string guitar with 17 frets in drop D tuning.
+
+D Minor is [D, E, F, G, A, A#, C]. This time let's highlight the pentatonic minor scale within D Minor, so [D, F, G, A, C]. We will use the colors cyan, green, yellow, magenta, and orange respectively. We will specify a default color of black for the other notes. We will do this for a 6 string guitar with 17 frets in drop D tuning.
 
 `python fretboard_scale_image.py -s 6 -f 17 -t d,a,d,g,b,e -n d,e,f,g,a,a#,c -c c,k,g,y,m,k,o -p d_minor_drop_d.svg`
 
 ![D Minor Example Image](./docs/d_minor_drop_d.svg)
 
-Notice that this time we specified a color for each note in the notes list. These colors are applied in order. Personally, I prefer the note:color pair method, but to each their own. 
+Notice that this time we specified a color for each note in the notes list. These colors are applied in order. If you don't like that unspecified notes default to black when using note:colors pairs, this would be the way to specify colors.
 
 
+Let's say you like the color scheme we just chose for D Pentatonic Minor, but you don't like that E and A# show up as black circles. We can easily remove them like so:
 
+`python fretboard_scale_image.py -s 6 -f 17 -t d,a,d,g,b,e -n d,f,g,a,c -c d:c,f:g,g:y,a:m,c:o -p d_pentatonic_minor_drop_d.svg`
+
+![D Pentatonic Minor Image](./docs/d_pentatonic_minor_drop_d.svg)
+
+
+Finally, let's take a look at the ["Metallica Scale"](https://www.youtube.com/watch?v=UuqvZDDm_bk) for A minor. The "Metallica Scale" is just taking a minor scale and adding in a minor 2nd (flat 2, A# in A Minor) and a tritone (flat 5th, D# in A Minor). So, we have [A, A#, B, C, D, D#, E, F, G]. Let's highlight the root in blue, the minor 2nd in red and the tritone in green. We will do this for a 7 string guitar with 24 frets tuned to drop A. Let's also change the image size for illustrative purposes.
+
+`python fretboard_scale_image.py -s 7 -f 24 -t a,e,a,d,g,b,e -n a,a#,b,c,d,d#,e,f,g -c a:b,a#:r,d#:g -p a_metallica_scale_drop_a.svg -w 1080 -e 720`
+
+![A Metallica Scale Image](./docs/a_metallica_scale_drop_a.svg)
