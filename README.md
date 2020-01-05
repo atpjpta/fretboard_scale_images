@@ -59,7 +59,7 @@ E Minor is [E, F#, G, A, B, C, D]. Let's say we want to highlight the root, the 
 
 `python fretboard_scale_image.py -s 6 -f 24 -t e,a,d,g,b,e -n e,f#,g,a,b,c,d -c e:r,g:g,b:b,c:y -p e_minor_standard.svg`
 
-![E Minor Example Image]('./docs/e_minor_standard.svg')
+![E Minor Example Image](./docs/e_minor_standard.svg)
 
 This will save an e_minor_standard.svg in your current folder. You can open it in a browser. If you'd prefer, you can change the extension to .pdf or .png and open it with a PDF of PNG viewer. Notice that the notes we did not specify a color for are black by default.
 
