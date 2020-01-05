@@ -6,7 +6,8 @@ I was inspired to write this program after watching [this video](https://www.you
 
 ## Dependencies:
 
-pycairo 1.18.2, numpy 1.17.4
+pycairo 1.18.2  
+numpy 1.17.4
 
 ## Arguments:
 
@@ -33,20 +34,20 @@ pycairo 1.18.2, numpy 1.17.4
                             
 3) A comma separated list of colors for each note in your scale in the same order as your scale. A color must be specified for each note if this format is used. 
 
-Duplicate colors are allowed for both options 2 and 3. The following colors are available:
-    r - red
-    o - orange
-    y - yellow
-    g - green
-    c - cyan
-    b - blue
-    m - magenta
-    t - teal
-    k - black # MATLAB haunts me
-    p - pink
-    l - lavender
-    n - navy
-    w - white
+Duplicate colors are allowed for both options 2 and 3. The following colors are available:  
+    r - red  
+    o - orange  
+    y - yellow  
+    g - green  
+    c - cyan  
+    b - blue  
+    m - magenta  
+    t - teal  
+    k - black # MATLAB haunts me  
+    p - pink  
+    l - lavender  
+    n - navy  
+    w - white  
 
 These colors were chosen because they can be easily abbreviated by 1 letter and supposedly [can be easily distinguished by 95% of population](https://sashat.me/2017/01/11/list-of-20-simple-distinct-colors/)
     
