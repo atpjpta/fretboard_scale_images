@@ -153,7 +153,8 @@ def __mk_scale_len(c, n, off):
 def draw_guitar_scale(fretboard, note_locations, 
                       scale_notes, note_highlights={}, 
                       save_name='scale.svg', im_width=792,
-                      im_height=612):
+                      im_height=612, realistic_spacing=True,
+                      marker_radius_multiplier=1.0):
     """
     Draws a vector graphic image of a fretboard with highlighted input notes to 
     a pdf, png or svg file.
@@ -165,6 +166,10 @@ def draw_guitar_scale(fretboard, note_locations,
         note_highlights: an optional dictionary specifying colors for notes. 
             if a dictionary is not specified, all notes are drawn in black.
         save_name: a file path to save your graphic to.
+        im_width: width of output image in points (1 point = 1/72.0 inch for printing)
+        im_height: height of output image in points
+        realistic_spacing: whether or not to draw the fretboard with realistic fret spacing
+        marker_radius_multiplier: Multipler for note radius
     """
     
     # im_width and im_height default value explanation:
@@ -200,9 +205,12 @@ def draw_guitar_scale(fretboard, note_locations,
     initial_x_point = 0.074 * im_width
     final_x_point = 0.981 * im_width
     
-    # this makes it spaced like a real fret board
-    fret_x = mk_scale_len(initial_x_point, final_x_point, notes_per_string)
-    
+    # Create correct x coordinates for fret's based on user input
+    if realistic_spacing:
+        fret_x = mk_scale_len(initial_x_point, final_x_point, notes_per_string)
+    else:
+        fret_x = np.linspace(initial_x_point, final_x_point, notes_per_string)
+        
     initial_y_point = 0.277 * im_height # this is the high string
     fret_height = 0.555 * im_height
     string_distance = fret_height / (num_strings - 1)
@@ -236,7 +244,7 @@ def draw_guitar_scale(fretboard, note_locations,
         cr.show_text('%d' % i)
         
     # set up font for labeling string tuning
-    font_size = 0.042 * im_width
+    font_size = 0.054 * im_height # 
     cr.set_font_size(font_size)
     x_text = 0.009 * im_width # starting x for each string label
     y_text_offset = font_size / 4
@@ -253,7 +261,7 @@ def draw_guitar_scale(fretboard, note_locations,
     # draw scale notes on fretboard as circles
     # color circles according to input color_highlights
     # default color is black
-    radius = 0.007 * im_width
+    radius = 0.007 * im_width * marker_radius_multiplier
     for note in scale_notes:
         for loc in note_locations[note]:
             i, j = loc
@@ -275,7 +283,7 @@ def draw_guitar_scale(fretboard, note_locations,
             cr.fill()
     
     # set up font for legend
-    font_size = 0.042 * im_width
+    font_size = 0.054 * im_height
     cr.set_font_size(font_size)
     y_text_offset = font_size / 4
     
@@ -283,7 +291,7 @@ def draw_guitar_scale(fretboard, note_locations,
     leg_spacing = font_size * 2
     leg_width = leg_spacing * (len(scale_notes)-1)
     leg_center_x = im_width / 2
-    leg_y = fret_y[-1] / (4/3)
+    leg_y = 3 * fret_y[-1] / 4
     leg_initial_x = leg_center_x - (leg_width / 2) - (font_size / 2)
     leg_x = np.linspace(leg_initial_x, leg_initial_x + leg_width, len(scale_notes))
     
@@ -304,7 +312,8 @@ def draw_guitar_scale(fretboard, note_locations,
         ps.write_to_png(save_name)
 
 def main():
-    parser = argparse.ArgumentParser(description='Fretboard scale creator')
+    parser = argparse.ArgumentParser(description='Fretboard scale creator', add_help=False)
+    parser.add_argument('--help', action='help')
     parser.add_argument('-s', '--num-strings', 
                         help='Number of strings on your fretted instrument',
                         type=int,
@@ -358,12 +367,35 @@ def main():
                         type=int,
                         required=False,
                         default=792)
-    parser.add_argument('-e', '--im-height',
+    parser.add_argument('-h', '--im-height',
                         help='Output image height',
                         type=int,
                         required=False,
                         default=612)
+    parser.add_argument('-m', '--marker-radius-multiplier',
+                        help='Multiplier for note marker size.',
+                        type=float,
+                        required=False,
+                        default=1.0)
+    
+    def str2bool(v):
+        if isinstance(v, bool):
+            return v
+        if v.lower() in ('yes', 'true', 't', 'y', '1'):
+            return True
+        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+            return False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+    parser.add_argument('-r', '--realistic-spacing',
+                       help='Turn realistic fretboard spacing on or off',
+                       type=str2bool, nargs='?',
+                       const=True, default=True,
+                       required=False)
     args = parser.parse_args()
+    
+    if args.marker_radius_multiplier <= 0:
+        raise ValueError('Marker size multiplier (-m) must be greater than 0.')
     
     # ridiculous that argparse doesn't support CSV input lists
     args.tuning = [n.lower() for n in args.tuning.split(',')]
@@ -420,7 +452,8 @@ def main():
     note_locations = get_note_locations(fretboard)
     draw_guitar_scale(fretboard, note_locations, args.scale_notes, note_highlights,
                       save_name=args.save_path, im_width=args.im_width, 
-                      im_height=args.im_height)
+                      im_height=args.im_height, realistic_spacing=args.realistic_spacing,
+                      marker_radius_multiplier=args.marker_radius_multiplier)
     
 if __name__ == "__main__":
     main()
