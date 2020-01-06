@@ -95,6 +95,60 @@ def get_note_locations(fretboard):
             
     return note_locations
 
+def mk_scale_len(min_x, max_x, n):
+    """
+    Constructs an array of fret locations (in arbitrary unit x), given constraints.
+
+    going by https://www.liutaiomottola.com/formulae/fret.htm, location of each
+    fret is given by
+
+        x[m] = (c-x[m-1])/17.817 + x[m-1]
+
+    where c is the scale length (for luthiers, this is is half the distance
+    between nut and bridge; we just need to set this constant to make it fit on
+    the page), and m is a note index. 17.817 is the constant for equal
+    temperament.
+
+    inputs:
+        x_min: x location of 0th fret (nut)
+        x_max: x location of n'th fret (see parameter n)
+        n: number of frets
+
+    outputs:
+        array where each element x[m] is the location of the fret for the m'th
+        note
+    """
+
+    # first figure out scale length. we need a scale length such that x[n] = max_x - min_x
+    #
+    #       x[n] = c - (c / (2^(n/12)))
+    #          c = x[n] / (1 - 2^(-n/12))
+    #
+    # then the constraint on x[n] gives
+    #
+    #          c = (max_x - min_x) / (1 - 2^(-n/12))
+    #
+
+    c = (max_x - min_x) / (1 - 2**(-n/12))
+
+    return list(__mk_scale_len(c, n, min_x))
+
+def __mk_scale_len(c, n, off):
+    """
+    Performs some math internal to mk_scale_len.
+
+    Only reason this is a seperate function is the way python handles generators
+
+    inputs:
+        c: scale length
+        n: number of frets
+        off: offset to apply to each fret /after/ position is calculated
+    """
+    m=0
+    for i in range(n):
+        yield m + off
+        m = (c-m)/17.817 + m
+
 
 def draw_guitar_scale(fretboard, note_locations, 
                       scale_notes, note_highlights={}, 
@@ -146,13 +200,8 @@ def draw_guitar_scale(fretboard, note_locations,
     initial_x_point = 0.074 * im_width
     final_x_point = 0.981 * im_width
     
-    # I really wanted this to be spaced like a real fret board, but every
-    # solution I can think of to solve for x's that still fit to the 
-    # page for any number of frets involves a term with a log-sum 
-    # and solving a nonlinear optimization problem just to make the 
-    # image look like a real guitar feels like overkill so this guitar
-    # has evenly spaced frets
-    fret_x = np.linspace(initial_x_point, final_x_point, notes_per_string)
+    # this makes it spaced like a real fret board
+    fret_x = mk_scale_len(initial_x_point, final_x_point, notes_per_string)
     
     initial_y_point = 0.277 * im_height # this is the high string
     fret_height = 0.555 * im_height
@@ -165,7 +214,7 @@ def draw_guitar_scale(fretboard, note_locations,
     cr.set_source_rgb(0, 0, 0)
     cr.set_line_width(2)
     cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-    font_size = 0.019 * im_width
+    font_size = 0.015 * im_width
     cr.set_font_size(font_size)
     x_text_offset = font_size / 2
     y_top_text_offset = font_size
@@ -174,6 +223,10 @@ def draw_guitar_scale(fretboard, note_locations,
     # draw each fret from the highest string to the lowest string
     # label each fret with its fret number
     for i, x in enumerate(fret_x):
+        width = 1
+        if (i%12) in [0, 5, 7, 10]:
+            width = 3
+        cr.set_line_width(width)
         cr.move_to(x-x_text_offset, fret_y[-1]-y_top_text_offset)
         cr.show_text('%d' % i)
         cr.move_to(x, fret_y[-1])
@@ -200,11 +253,17 @@ def draw_guitar_scale(fretboard, note_locations,
     # draw scale notes on fretboard as circles
     # color circles according to input color_highlights
     # default color is black
-    radius = 0.009 * im_width
+    radius = 0.007 * im_width
     for note in scale_notes:
         for loc in note_locations[note]:
             i, j = loc
-            x_c = fret_x[j]
+
+            # put dots in between frets, i.e. where fingers go
+            if j == 0:
+                x_c = fret_x[0]
+            else:
+                x_c = fret_x[j] - (fret_x[j]-fret_x[j-1])/2
+
             y_c = fret_y[i]
             cr.arc(x_c, y_c, radius, 0, 2*np.pi)
             
@@ -224,7 +283,7 @@ def draw_guitar_scale(fretboard, note_locations,
     leg_spacing = font_size * 2
     leg_width = leg_spacing * (len(scale_notes)-1)
     leg_center_x = im_width / 2
-    leg_y = fret_y[-1] / 2
+    leg_y = fret_y[-1] / (4/3)
     leg_initial_x = leg_center_x - (leg_width / 2) - (font_size / 2)
     leg_x = np.linspace(leg_initial_x, leg_initial_x + leg_width, len(scale_notes))
     
