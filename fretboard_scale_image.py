@@ -469,7 +469,7 @@ def parse_args():
     parser.add_argument('-d', '--dark-mode',
                         type=str2bool, nargs='?',
                         help='Enable dark mode.',
-                        const=True, default=True,
+                        const=True, default=False,
                         required=False)
     args = parser.parse_args()
     
