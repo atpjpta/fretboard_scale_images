@@ -2,7 +2,7 @@ import cairo
 import argparse
 import numpy as np
 
-def make_fretboard(num_strings, num_frets, tuning):
+def make_fretboard(args):
     """
     Constructs a 2d list representing a fretboard.
     The 0-th element is your lowest string (i.e. low E on six string)
@@ -10,14 +10,15 @@ def make_fretboard(num_strings, num_frets, tuning):
     Each element is the note at that fret.
 
     inputs:
-        tuning: array specifying the note of the 0-th fret of each string, 
-            starting from lowest string 
-            
-        num_frets: number of frets on your guitar
+        args: arguments from command line. See --help output or README for details.
     
     outputs:
         fretboard: 2d list representing a fretboard.
     """
+    num_strings = args.num_strings
+    num_frets = args.num_frets
+    tuning = args.tuning
+    
     notes = {'a': 0, 'a#': 1, 'b': 2, 'c': 3, 'c#': 4, 'd': 5, 
          'd#': 6, 'e': 7, 'f': 8, 'f#': 9, 'g': 10, 'g#': 11}
 
@@ -150,33 +151,33 @@ def __mk_scale_len(c, n, off):
         m = (c-m)/17.817 + m
 
 
-def draw_guitar_scale(fretboard, note_locations, 
-                      scale_notes, note_highlights={}, 
-                      save_name='scale.svg', im_width=792,
-                      im_height=612, realistic_spacing=True,
-                      marker_radius_multiplier=1.0):
+def draw_guitar_scale(args, fretboard, note_locations, note_highlights={}):
     """
     Draws a vector graphic image of a fretboard with highlighted input notes to 
     a pdf, png or svg file.
     
     inputs:
+        args: arguments from command line. See --help output or README for details.
         fretboard: a 2d list representing a fretboard returned by make_fretboard().
         note_locations: a dictionary of note locations on the input fretboard.
-        scale_notes: a list of notes from any scale on your instrument.
         note_highlights: an optional dictionary specifying colors for notes. 
             if a dictionary is not specified, all notes are drawn in black.
-        save_name: a file path to save your graphic to.
-        im_width: width of output image in points (1 point = 1/72.0 inch for printing)
-        im_height: height of output image in points
-        realistic_spacing: whether or not to draw the fretboard with realistic fret spacing
-        marker_radius_multiplier: Multipler for note radius
     """
+    scale_notes = args.scale_notes
+    save_name = args.save_path
+    im_width = args.im_width
+    im_height = args.im_height
+    realistic_spacing = args.realistic_spacing
+    marker_radius_multiplier = args.marker_radius_multiplier
+    dark_mode = args.dark_mode
     
-    # im_width and im_height default value explanation:
-    # 1 point == 1/72.0 inch
-    # For 8.5 x 11 printable pdf we have:
-    # 72 * 11 = 792 points
-    # 72 * 8.5 = 612 points
+    # set color pallete appropriately
+    if dark_mode:
+        background_color = tuple([30/255 for _ in range(3)])
+        foreground_color = tuple([160/255 for _ in range(3)])
+    else:
+        background_color = (1, 1, 1)
+        foreground_color = (0, 0, 0)
     
     # deduce surface from input file extension
     # SVG's render great in browsers by the way, definitely my favorite.
@@ -191,6 +192,10 @@ def draw_guitar_scale(fretboard, note_locations,
         raise ValueError('Input extension %s unrecognized. Use .pdf, .png, or .svg.' % ext)
         
     cr = cairo.Context(ps)
+    
+    cr.rectangle(0, 0, im_width, im_height)
+    cr.set_source_rgb(*background_color)
+    cr.fill()
     
     num_strings = len(fretboard)
     notes_per_string = len(fretboard[0])
@@ -219,7 +224,7 @@ def draw_guitar_scale(fretboard, note_locations,
     fret_y = np.linspace(initial_y_point+fret_height, initial_y_point, num_strings)
 
     # set up text and line parameters
-    cr.set_source_rgb(0, 0, 0)
+    cr.set_source_rgb(*foreground_color)
     cr.set_line_width(2)
     cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
     font_size = 0.015 * im_width
@@ -275,10 +280,9 @@ def draw_guitar_scale(fretboard, note_locations,
             y_c = fret_y[i]
             cr.arc(x_c, y_c, radius, 0, 2*np.pi)
             
-            cr.set_source_rgb(0, 0, 0)
+            cr.set_source_rgb(*foreground_color)
             if note in note_highlights:
-                r, g, b = note_highlights[note]
-                cr.set_source_rgb(r, g, b)
+                cr.set_source_rgb(*note_highlights[note])
             
             cr.fill()
     
@@ -296,12 +300,11 @@ def draw_guitar_scale(fretboard, note_locations,
     leg_x = np.linspace(leg_initial_x, leg_initial_x + leg_width, len(scale_notes))
     
     for i, note in enumerate(scale_notes):
-        cr.set_source_rgb(0, 0, 0)
+        cr.set_source_rgb(*foreground_color)
         
         # color legend appropriately
         if note in note_highlights:
-            r, g, b = note_highlights[note]
-            cr.set_source_rgb(r, g, b)
+            cr.set_source_rgb(*note_highlights[note])
         
         cr.move_to(leg_x[i], leg_y)
         cr.show_text(note.upper())
@@ -311,96 +314,14 @@ def draw_guitar_scale(fretboard, note_locations,
     else:
         ps.write_to_png(save_name)
 
-def main():
-    parser = argparse.ArgumentParser(description='Fretboard scale creator', add_help=False)
-    parser.add_argument('--help', action='help')
-    parser.add_argument('-s', '--num-strings', 
-                        help='Number of strings on your fretted instrument',
-                        type=int,
-                        required=True)
-    parser.add_argument('-f', '--num-frets',
-                        help='Number of frets on your fretted instrument',
-                        type=int,
-                        required=True)
-    parser.add_argument('-t', '--tuning',
-                        help='Comma separated list of notes your instrument is tuned to starting from lowest string',
-                        type=str,
-                        required=True)
-    parser.add_argument('-n', '--scale-notes',
-                        help='Comma separated list of notes in your scale',
-                        type=str,
-                        required=True)
-    parser.add_argument('-c', '--note-colors',
-                        help="""
-                            There are three options for specifying note colors.
-                            
-                            1) It can be left black. All scale notes will be drawn in black by default.
-                            
-                            2) A comma separated list of note:color pairs. For example, specifying the following will
-                            draw E notes in red, G notes in blue, C notes in teal, and any unspecified notes in black: 
-                            -c e:r,g:b,c:t
-                            
-                            3) A comma separated list of colors for each note in your scale in the same order as your
-                            scale. A color must be specified for each note if this format is used. Duplicates are allowed.
-                            The following colors are available:
-                                r - red, 
-                                o - orange, 
-                                y - yellow, 
-                                g - green, 
-                                c - cyan, 
-                                b - blue, 
-                                m - magenta, 
-                                t - teal, 
-                                k - black,
-                                p - pink,
-                                l - lavender, 
-                                n - navy,
-                                w - white
-                            """,
-                        type=str,
-                        required=False)
-    parser.add_argument('-p', '--save-path',
-                        help='File path to save image to. Can be a .pdf, .png, or .svg file.',
-                        type=str)
-    parser.add_argument('-w', '--im-width', 
-                        help='Output image width',
-                        type=int,
-                        required=False,
-                        default=792)
-    parser.add_argument('-h', '--im-height',
-                        help='Output image height',
-                        type=int,
-                        required=False,
-                        default=612)
-    parser.add_argument('-m', '--marker-radius-multiplier',
-                        help='Multiplier for note marker radius.',
-                        type=float,
-                        required=False,
-                        default=1.0)
+
+def get_note_highlights(args):
+    """
+    Create a dictionary mapping user specified notes to a particular RGB value.
     
-    def str2bool(v):
-        if isinstance(v, bool):
-            return v
-        if v.lower() in ('yes', 'true', 't', 'y', '1'):
-            return True
-        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-            return False
-        else:
-            raise argparse.ArgumentTypeError('Boolean value expected.')
-    parser.add_argument('-r', '--realistic-spacing',
-                       help='Turn realistic fretboard spacing on or off',
-                       type=str2bool, nargs='?',
-                       const=True, default=True,
-                       required=False)
-    args = parser.parse_args()
-    
-    if args.marker_radius_multiplier <= 0:
-        raise ValueError('Marker size multiplier (-m) must be greater than 0.')
-    
-    # ridiculous that argparse doesn't support CSV input lists
-    args.tuning = [n.lower() for n in args.tuning.split(',')]
-    args.scale_notes = [n.lower() for n in args.scale_notes.split(',')]
-    
+    inputs:
+        args: arguments from command line. See --help output or README for details.
+    """
     # 13 colors that can be easily abbreviated by 1 letter and supposedly can be
     # easily distinguished by 95% of population
     # https://sashat.me/2017/01/11/list-of-20-simple-distinct-colors/
@@ -446,14 +367,129 @@ def main():
                     """)
             for i, n in enumerate(args.scale_notes):
                 note_highlights[n] = colors_to_rgb[args.note_colors[i]]
+    
+    return note_highlights
 
+
+def parse_args():
+    """
+    Parse command line arguments.
+    """
+    parser = argparse.ArgumentParser(description='Fretboard scale creator', add_help=False)
+    parser.add_argument('--help', action='help')
+    
+    # required arguments
+    parser.add_argument('-s', '--num-strings', 
+                        help='Number of strings on your fretted instrument',
+                        type=int,
+                        required=True)
+    parser.add_argument('-f', '--num-frets',
+                        help='Number of frets on your fretted instrument',
+                        type=int,
+                        required=True)
+    parser.add_argument('-t', '--tuning',
+                        help='Comma separated list of notes your instrument is tuned to starting from lowest string',
+                        type=str,
+                        required=True)
+    parser.add_argument('-n', '--scale-notes',
+                        help='Comma separated list of notes in your scale',
+                        type=str,
+                        required=True)
+    parser.add_argument('-p', '--save-path',
+                        help='File path to save image to. Can be a .pdf, .png, or .svg file.',
+                        type=str,
+                        required=True)
+    
+    # Optional arguments
+    parser.add_argument('-c', '--note-colors',
+                        help="""
+                            There are three options for specifying note colors.
+                            
+                            1) It can be left black. All scale notes will be drawn in black by default.
+                            
+                            2) A comma separated list of note:color pairs. For example, specifying the following will
+                            draw E notes in red, G notes in blue, C notes in teal, and any unspecified notes in black: 
+                            -c e:r,g:b,c:t
+                            
+                            3) A comma separated list of colors for each note in your scale in the same order as your
+                            scale. A color must be specified for each note if this format is used. Duplicates are allowed.
+                            The following colors are available:
+                                r - red, 
+                                o - orange, 
+                                y - yellow, 
+                                g - green, 
+                                c - cyan, 
+                                b - blue, 
+                                m - magenta, 
+                                t - teal, 
+                                k - black,
+                                p - pink,
+                                l - lavender, 
+                                n - navy,
+                                w - white
+                            """,
+                        type=str,
+                        required=False)
+    
+    # im_width and im_height default value explanation:
+    # 1 point == 1/72.0 inch
+    # For 8.5 x 11 printable pdf we have:
+    # 72 * 11 = 792 points
+    # 72 * 8.5 = 612 points
+    parser.add_argument('-w', '--im-width', 
+                        help='Output image width',
+                        type=int,
+                        required=False,
+                        default=792)
+    parser.add_argument('-h', '--im-height',
+                        help='Output image height',
+                        type=int,
+                        required=False,
+                        default=612)
+    parser.add_argument('-m', '--marker-radius-multiplier',
+                        help='Multiplier for note marker radius.',
+                        type=float,
+                        required=False,
+                        default=1.0)
+    
+    def str2bool(v):
+        if isinstance(v, bool):
+            return v
+        if v.lower() in ('yes', 'true', 't', 'y', '1'):
+            return True
+        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+            return False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+    parser.add_argument('-r', '--realistic-spacing',
+                        help='Turn realistic fretboard spacing on or off',
+                        type=str2bool, nargs='?',
+                        const=True, default=True,
+                        required=False)
+    parser.add_argument('-d', '--dark-mode',
+                        type=str2bool, nargs='?',
+                        help='Enable dark mode.',
+                        const=True, default=True,
+                        required=False)
+    args = parser.parse_args()
+    
+    return args
+
+def main():
+    args = parse_args()
+    
+    if args.marker_radius_multiplier <= 0:
+        raise ValueError('Marker size multiplier (-m) must be greater than 0.')
+    
+    # ridiculous that argparse doesn't support CSV input lists
+    args.tuning = [n.lower() for n in args.tuning.split(',')]
+    args.scale_notes = [n.lower() for n in args.scale_notes.split(',')]
+    
     # make badass images
-    fretboard = make_fretboard(args.num_strings, args.num_frets, args.tuning)
+    fretboard = make_fretboard(args)
     note_locations = get_note_locations(fretboard)
-    draw_guitar_scale(fretboard, note_locations, args.scale_notes, note_highlights,
-                      save_name=args.save_path, im_width=args.im_width, 
-                      im_height=args.im_height, realistic_spacing=args.realistic_spacing,
-                      marker_radius_multiplier=args.marker_radius_multiplier)
+    note_highlights = get_note_highlights(args)
+    draw_guitar_scale(args, fretboard, note_locations, note_highlights)
     
 if __name__ == "__main__":
     main()
