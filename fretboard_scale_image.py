@@ -373,7 +373,7 @@ def main():
                         required=False,
                         default=612)
     parser.add_argument('-m', '--marker-radius-multiplier',
-                        help='Multiplier for note marker size.',
+                        help='Multiplier for note marker radius.',
                         type=float,
                         required=False,
                         default=1.0)
