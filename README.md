@@ -134,18 +134,18 @@ Let's say you like the color scheme we just chose for D Pentatonic Minor, but yo
 
 Let's take a look at the ["Metallica Scale"](https://www.youtube.com/watch?v=UuqvZDDm_bk) for A minor. The "Metallica Scale" is just taking a minor scale and adding in a minor 2nd (flat 2, A# in A Minor) and a tritone (flat 5th, D# in A Minor). So, we have [A, A#, B, C, D, D#, E, F, G]. Let's highlight the root in blue, the minor 2nd in red and the tritone in green. We will do this for a 7 string guitar with 24 frets tuned to drop A. Let's also change the image size for illustrative purposes.
 
-`python fretboard_scale_image.py -s 7 -f 24 -t a,e,a,d,g,b,e -n a,a#,b,c,d,d#,e,f,g -c a:b,a#:r,d#:g -p a_metallica_scale_drop_a.svg -w 1040`
+`python fretboard_scale_image.py -s 7 -f 24 -t a,e,a,d,g,b,e -n a,a#,b,c,d,d#,e,f,g -c a:b,a#:r,d#:g -p a_metallica_scale_drop_a.svg -w 1100 -h 700`
 
 ![A Metallica Scale](./docs/a_metallica_scale_drop_a.svg)
 
 You can also turn off realistic fret spacing and change note marker sizes. Let's do this for an E Minor scale:
 
-`python fretboard_scale_image.py -s 6 -f 24 -t e,a,d,g,b,e -n e,f#,g,a,b,c,d -c e:r,g:g,b:b,c:y -w 900 -h 525 -r false -m 1.5 -p e_minor_big_markers_even_spaced.svg`
+`python fretboard_scale_image.py -s 6 -f 24 -t e,a,d,g,b,e -n e,f#,g,a,b,c,d -c e:r,g:g,b:b,c:y -r false -m 1.5 -p e_minor_big_markers_even_spaced.svg`
 
 ![E Minor Big Markers Even Spaced](./docs/e_minor_big_markers_even_spaced.svg)
 
 Dark mode is available! Here it is for D Phrygian in Drop D:
 
-`python fretboard_scale_image.py -s 6 -f 24 -t d,a,d,g,b,e -n d,d#,f,g,a,a#,c -c d:r,d#:y,f:c,a:b,a#:o -w 900 -h 525 -d -p d_phrygian_drop_d.svg`
+`python fretboard_scale_image.py -s 6 -f 24 -t d,a,d,g,b,e -n d,d#,f,g,a,a#,c -c d:r,d#:y,f:c,a:b,a#:o -d -p d_phrygian_drop_d.svg`
 
 ![D Phrygian Scale](./docs/d_phrygian_drop_d.svg)
