@@ -205,12 +205,12 @@ def draw_guitar_scale(args, fretboard, note_locations, note_highlights={}):
         fret_x = np.linspace(initial_x_point, final_x_point, notes_per_string)
     fret_widths = np.concatenate(([0], fret_x[1:]-fret_x[0:-1])) # 0-th "fret" has 0 width
     
-    initial_y_point = 0.277 * im_height # this is the high string
-    fret_height = 0.555 * im_height
+    initial_y_point = 0.2 * im_height # this is the high string
+    fret_height = 0.679 * im_height
     string_distance = fret_height / (num_strings - 1)
     
     # 0-th element is lowest string
-    fret_y = np.linspace(initial_y_point+fret_height, initial_y_point, num_strings)
+    string_y = np.linspace(initial_y_point+fret_height, initial_y_point, num_strings)
 
     # set up text and line parameters
     cr.set_source_rgb(*foreground_color)
@@ -237,23 +237,23 @@ def draw_guitar_scale(args, fretboard, note_locations, note_highlights={}):
         x_text_offset = fret_widths[i]/2 + font_size/offset_divisor
 
         cr.set_line_width(width)
-        cr.move_to(x-x_text_offset, fret_y[-1]-y_top_text_offset)
+        cr.move_to(x-x_text_offset, string_y[-1]-y_top_text_offset)
         cr.show_text('%d' % i)
-        cr.move_to(x, fret_y[-1])
-        cr.line_to(x, fret_y[0])
+        cr.move_to(x, string_y[-1])
+        cr.line_to(x, string_y[0])
         cr.stroke()
-        cr.move_to(x-x_text_offset, fret_y[0]+y_bottom_text_offset)
+        cr.move_to(x-x_text_offset, string_y[0]+y_bottom_text_offset)
         cr.show_text('%d' % i)
         
     # set up font for labeling string tuning
-    font_size = 0.054 * im_height # 
+    font_size = 0.066 * im_height # 
     cr.set_font_size(font_size)
     x_text = 0.009 * im_width # starting x for each string label
     y_text_offset = font_size / 4
     
     # draw strings from 0-th fret to n-th fret
     # label each string with its open string note
-    for i, y in enumerate(fret_y):
+    for i, y in enumerate(string_y):
         cr.move_to(x_text, y+y_text_offset)
         cr.show_text(fretboard[i][0].upper())
         cr.move_to(fret_x[0], y)
@@ -274,7 +274,7 @@ def draw_guitar_scale(args, fretboard, note_locations, note_highlights={}):
             else:
                 x_c = fret_x[j] - (fret_x[j]-fret_x[j-1])/2
 
-            y_c = fret_y[i]
+            y_c = string_y[i]
             cr.arc(x_c, y_c, radius, 0, 2*np.pi)
             
             cr.set_source_rgb(*foreground_color)
@@ -284,7 +284,7 @@ def draw_guitar_scale(args, fretboard, note_locations, note_highlights={}):
             cr.fill()
     
     # set up font for legend
-    font_size = 0.054 * im_height
+    font_size = 0.066 * im_height
     cr.set_font_size(font_size)
     y_text_offset = font_size / 4
     
@@ -292,7 +292,7 @@ def draw_guitar_scale(args, fretboard, note_locations, note_highlights={}):
     leg_spacing = font_size * 2
     leg_width = leg_spacing * (len(scale_notes)-1)
     leg_center_x = im_width / 2
-    leg_y = 3 * fret_y[-1] / 4
+    leg_y = string_y[-1] / 2 #3 * string_y[-1] / 4
     leg_initial_x = leg_center_x - (leg_width / 2) - (font_size / 2)
     leg_x = np.linspace(leg_initial_x, leg_initial_x + leg_width, len(scale_notes))
     
@@ -428,21 +428,24 @@ def parse_args():
                         type=str,
                         required=False)
     
-    # im_width and im_height default value explanation:
-    # 1 point == 1/72.0 inch
-    # For 8.5 x 11 printable pdf we have:
+    # Just picked values that looked good for the default...
+    #
+    # 1 point == 1/72.0 inch. For 8.5 x 11 printable image you would want:
     # 72 * 11 = 792 points
     # 72 * 8.5 = 612 points
+    # 
+    # This looks ridiculous on a computer screen though 
+    # so its not the default
     parser.add_argument('-w', '--im-width', 
                         help='Output image width',
                         type=int,
                         required=False,
-                        default=792)
+                        default=1040)
     parser.add_argument('-h', '--im-height',
                         help='Output image height',
                         type=int,
                         required=False,
-                        default=612)
+                        default=500)
     parser.add_argument('-m', '--marker-radius-multiplier',
                         help='Multiplier for note marker radius.',
                         type=float,
