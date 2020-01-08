@@ -96,7 +96,7 @@ def get_note_locations(fretboard):
             
     return note_locations
 
-def mk_scale_len(min_x, max_x, n):
+def get_fret_spacing(min_x, max_x, num_frets):
     """
     Constructs an array of fret locations (in arbitrary unit x), given constraints.
 
@@ -113,13 +113,12 @@ def mk_scale_len(min_x, max_x, n):
     inputs:
         x_min: x location of 0th fret (nut)
         x_max: x location of n'th fret (see parameter n)
-        n: number of frets
+        num_frets: number of frets
 
     outputs:
         array where each element x[m] is the location of the fret for the m'th
         note
     """
-
     # first figure out scale length. we need a scale length such that x[n] = max_x - min_x
     #
     #       x[n] = c - (c / (2^(n/12)))
@@ -129,26 +128,15 @@ def mk_scale_len(min_x, max_x, n):
     #
     #          c = (max_x - min_x) / (1 - 2^(-n/12))
     #
+    c = (max_x - min_x) / (1 - 2**(-num_frets/12))
 
-    c = (max_x - min_x) / (1 - 2**(-n/12))
-
-    return list(__mk_scale_len(c, n, min_x))
-
-def __mk_scale_len(c, n, off):
-    """
-    Performs some math internal to mk_scale_len.
-
-    Only reason this is a seperate function is the way python handles generators
-
-    inputs:
-        c: scale length
-        n: number of frets
-        off: offset to apply to each fret /after/ position is calculated
-    """
-    m=0
-    for i in range(n):
-        yield m + off
-        m = (c-m)/17.817 + m
+    eq_temp_constant = 17.817
+    fret_spaces = [0]
+    for i in range(num_frets-1):
+        fret_spaces.append((c-fret_spaces[-1])/eq_temp_constant + fret_spaces[-1])
+    fret_spaces = np.array(fret_spaces) + min_x
+    
+    return fret_spaces
 
 
 def draw_guitar_scale(args, fretboard, note_locations, note_highlights={}):
@@ -212,10 +200,11 @@ def draw_guitar_scale(args, fretboard, note_locations, note_highlights={}):
     
     # Create correct x coordinates for fret's based on user input
     if realistic_spacing:
-        fret_x = mk_scale_len(initial_x_point, final_x_point, notes_per_string)
+        fret_x = get_fret_spacing(initial_x_point, final_x_point, notes_per_string)
     else:
         fret_x = np.linspace(initial_x_point, final_x_point, notes_per_string)
-        
+    fret_widths = np.concatenate(([0], fret_x[1:]-fret_x[0:-1])) # 0-th "fret" has 0 width
+    
     initial_y_point = 0.277 * im_height # this is the high string
     fret_height = 0.555 * im_height
     string_distance = fret_height / (num_strings - 1)
@@ -229,16 +218,24 @@ def draw_guitar_scale(args, fretboard, note_locations, note_highlights={}):
     cr.select_font_face("Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
     font_size = 0.015 * im_width
     cr.set_font_size(font_size)
-    x_text_offset = font_size / 2
+    x_base_text_offset = font_size / 4
     y_top_text_offset = font_size
     y_bottom_text_offset = 2 * font_size
+    wide_frets = [0, 3, 5, 7, 9]
     
     # draw each fret from the highest string to the lowest string
     # label each fret with its fret number
     for i, x in enumerate(fret_x):
         width = 1
-        if (i%12) in [0, 5, 7, 10]:
+        if (i % 12) in wide_frets:
             width = 3
+        
+        # we want to shift fret text by font_size/4 for single digit labels,
+        # font_size/2 for two digit labels, etc. This makes them centered
+        # above/below fret after shifting by half of fret width
+        offset_divisor = 4 / 2**np.floor(np.log10(i+1))
+        x_text_offset = fret_widths[i]/2 + font_size/offset_divisor
+
         cr.set_line_width(width)
         cr.move_to(x-x_text_offset, fret_y[-1]-y_top_text_offset)
         cr.show_text('%d' % i)
